@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 
+const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 async function request(suffix = '', method = 'GET', body, signal) {
-  const response = await fetch('/api/tasks' + suffix, {
+  const response = await fetch(apiBase + '/api/tasks' + suffix, {
     method,
     signal,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
@@ -12,7 +14,7 @@ async function request(suffix = '', method = 'GET', body, signal) {
   if (response.status === 204) return;
   const result = await response.json().catch(() => null);
   if (!response.ok || result === null) {
-    throw new Error(result?.error || 'Could not reach the task API. Check that the Python server is running.');
+    throw new Error(result?.error || (typeof result?.detail === 'string' ? result.detail : '') || 'Could not reach the task API. Check that the Python server is running.');
   }
   return result;
 }

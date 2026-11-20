@@ -30,3 +30,13 @@ From `frontend/`, run `npm run build` after installing dependencies. From the pr
 | POST | /api/tasks | `{"title":"Read a chapter"}` |
 | PATCH | /api/tasks/:id | `{"completed":true}` |
 | DELETE | /api/tasks/:id | |
+
+## Deploy to Vercel and Cloudflare Pages
+
+1. Push the updated project to the Git repository connected to both services.
+2. In Vercel, import the repository, select the `backend` root directory and **FastAPI** framework preset, and leave the build, output, and install overrides off.
+3. Connect a Postgres database such as Neon. Run [backend/schema.sql](backend/schema.sql) once in its SQL editor. Set `DATABASE_URL` in the Vercel project's Production environment to the database's pooled connection string, or use the variable supplied by the integration. Deploy or redeploy after it is set.
+4. Open `https://YOUR-BACKEND.vercel.app/api/tasks`. A newly initialized database should return `[]`.
+5. In the Cloudflare Pages production build settings, set `VITE_API_URL` to `https://YOUR-BACKEND.vercel.app` and redeploy the frontend. The API allows browser requests from `https://task-854.pages.dev`.
+
+The hosted database starts empty. Local development still uses the original JSON store. The hosted API has a single shared task list and no sign-in.

@@ -1,0 +1,7 @@
+tasks.json
+tasks.json.tmp
+
+frontend/node_modules/
+frontend/dist/
+
+backend/__pycache__/
