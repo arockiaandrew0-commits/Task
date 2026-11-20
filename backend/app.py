@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -26,6 +27,15 @@ class TaskUpdate(BaseModel):
     completed: StrictBool
 
 
+def ensure_task_table(connection):
+    if connection.execute("SELECT to_regclass('tasks') AS table_name").fetchone()["table_name"]:
+        return
+    # Serialize initialization across Vercel instances sharing the database.
+    connection.execute("SELECT pg_advisory_xact_lock(880047315)")
+    schema = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+    connection.execute(schema)
+
+
 @contextmanager
 def database():
     url = os.environ.get("DATABASE_URL")
@@ -33,6 +43,7 @@ def database():
         raise HTTPException(503, detail="Task storage is not configured.")
     try:
         with psycopg.connect(url, row_factory=dict_row, connect_timeout=5) as connection:
+            ensure_task_table(connection)
             yield connection
     except (psycopg.OperationalError, psycopg.errors.UndefinedTable) as error:
         raise HTTPException(503, detail="Task storage is unavailable.") from error
