@@ -8,11 +8,8 @@ from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 STORE = Path(os.environ.get("TASKS_FILE", ROOT / "tasks.json"))
-ASSETS = {
-    "/": ("index.html", "text/html"),
-    "/style.css": ("style.css", "text/css"),
-    "/app.js": ("app.js", "text/javascript"),
-}
+DIST = ROOT / "frontend" / "dist"
+BUILT_ASSET = re.compile(r"/assets/[\w-]+\.(js|css)")
 TASK_ROUTE = re.compile(r"/api/tasks/([a-f0-9-]+)")
 
 
@@ -70,9 +67,19 @@ class TaskHandler(BaseHTTPRequestHandler):
         method = self.command
         tasks = self.server.tasks
 
-        if method == "GET" and route in ASSETS:
-            filename, mime = ASSETS[route]
-            return self.respond(200, (ROOT / "frontend" / filename).read_bytes(), mime + "; charset=utf-8")
+        if method == "GET" and route == "/":
+            index = DIST / "index.html"
+            if not index.is_file():
+                return self.respond(200, b"Python API is running. Open the Vite dev server or build the frontend.", "text/plain; charset=utf-8")
+            return self.respond(200, index.read_bytes(), "text/html; charset=utf-8")
+
+        asset = BUILT_ASSET.fullmatch(route)
+        if method == "GET" and asset:
+            file = DIST / route.lstrip("/")
+            if not file.is_file():
+                raise RequestError(404, "Asset not found.")
+            mime = "text/javascript" if asset[1] == "js" else "text/css"
+            return self.respond(200, file.read_bytes(), mime + "; charset=utf-8")
 
         if route == "/api/tasks":
             if method == "GET":
